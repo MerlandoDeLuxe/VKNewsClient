@@ -41,6 +41,10 @@ android {
 
 dependencies {
     implementation ("androidx.compose.runtime:runtime-livedata:1.7.6")
+    val nav_version = "2.8.4"
+    val lifecycle_version = "2.8.7"
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
+    implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

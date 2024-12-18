@@ -1,4 +1,4 @@
-package com.example.vknewsclient
+package com.example.vknewsclient.ui.theme
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import com.example.vknewsclient.domain.FeedPost
 import com.example.vknewsclient.domain.StatisticItem
 import com.example.vknewsclient.domain.StatisticType
-import com.example.vknewsclient.ui.theme.VKNewsClientTheme
 
 @Composable
 fun NewsCard(

@@ -1,5 +1,6 @@
 package com.example.vknewsclient.ui.theme
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,25 +30,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vknewsclient.CommentsViewModel
+import com.example.vknewsclient.CommentsViewModelFactory
 import com.example.vknewsclient.domain.FeedPost
 import com.example.vknewsclient.domain.PostComment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsScreen(
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    feedPost: FeedPost
 ) {
-    val viewModel: CommentsViewModel = viewModel()
+    val viewModel: CommentsViewModel = viewModel(
+        factory = CommentsViewModelFactory(feedPost)
+    )
     val screenState = viewModel.screenState.observeAsState(CommentsScreenState.Initial)
     val currentState = screenState.value
-    if (currentState is CommentsScreenState.Comments){
+
+    if (currentState is CommentsScreenState.Comments) {
         Scaffold(topBar = {
             TopAppBar(
                 title = {
-                    Text(text = "Комментарии для поста Id ${currentState.feedPost.id}")
+                    Text(text = "Комментарии для поста Id ${currentState.feedPost.id} ${currentState.feedPost.contentText}")
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onBackPressed() }) {
+                    IconButton(onClick = {
+                        onBackPressed()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 }

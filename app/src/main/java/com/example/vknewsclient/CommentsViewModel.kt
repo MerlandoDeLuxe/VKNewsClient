@@ -1,5 +1,6 @@
 package com.example.vknewsclient
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -7,16 +8,20 @@ import com.example.vknewsclient.domain.FeedPost
 import com.example.vknewsclient.domain.PostComment
 import com.example.vknewsclient.ui.theme.CommentsScreenState
 
-class CommentsViewModel : ViewModel() {
+class CommentsViewModel(
+    feedPost: FeedPost
+) : ViewModel() {
 
+    private val TAG = "CommentsViewModel"
     private val _screenState = MutableLiveData<CommentsScreenState>(CommentsScreenState.Initial)
     val screenState: LiveData<CommentsScreenState> = _screenState
 
     init {
-        loadComments(FeedPost(id = 0))
+        Log.d(TAG, "CommentsViewModel ")
+        loadComments(feedPost)
     }
 
-    fun loadComments(feedPost: FeedPost) {
+    private fun loadComments(feedPost: FeedPost) {
         val comments = mutableListOf<PostComment>().apply {
             repeat(10) {
                 add(PostComment(id = it))

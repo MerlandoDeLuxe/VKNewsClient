@@ -20,10 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.vknewsclient.NewsFeedViewModel
 import com.example.vknewsclient.domain.FeedPost
 import com.example.vknewsclient.navigation.AppNavGraph
+import com.example.vknewsclient.navigation.Screen
 import com.example.vknewsclient.navigation.rememberNavigationState
 import com.example.vknewsclient.ui.theme.CommentsScreen
 import com.example.vknewsclient.ui.theme.HomeScreen
@@ -32,10 +33,6 @@ import com.example.vknewsclient.ui.theme.HomeScreen
 fun MainScreen() {
     val navigationState = rememberNavigationState()
 
-    val commentsToPost: MutableState<FeedPost?> = remember {
-        mutableStateOf(null)
-    }
-
     Scaffold(
         bottomBar = {
             NavigationBar(
@@ -43,15 +40,23 @@ fun MainScreen() {
             ) {
                 //Стейт для хранения выбранного экрана в BottomNavigation
                 val navBackStackEntry by navigationState.navHostController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
 
                 val items =
-                    listOf(NavigationItem.Home, NavigationItem.Favorite, NavigationItem.Profile)
+                    listOf(
+                        NavigationItem.Home,
+                        NavigationItem.Favorite,
+                        NavigationItem.Profile
+                    )
                 items.forEach { item ->
+                    val selected = navBackStackEntry?.destination?.hierarchy?.any {
+                        it.route == item.screen.route
+                    } ?: false
                     NavigationBarItem(
-                        selected = currentRoute == item.screen.route,
+                        selected = selected,
                         onClick = {
-                            navigationState.navigateTo(item.screen.route)
+                            if (!selected) {
+                                navigationState.navigateTo(item.screen.route)
+                            }
                         },
                         icon = {
                             Icon(item.icon, contentDescription = "")
@@ -75,18 +80,20 @@ fun MainScreen() {
 
         AppNavGraph(
             navHostController = navigationState.navHostController,
-            homeScreenContent = {
-                if (commentsToPost.value == null) {
-                    HomeScreen(
-                        paddingValues,
-                        onCommentClickListener = {
-                            commentsToPost.value = it
-                        })
-                } else {
-                    CommentsScreen {
-                        commentsToPost.value = null
-                    }
-                }
+            newsFeedScreenContent = {
+                HomeScreen(
+                    paddingValues,
+                    onCommentClickListener = {
+                        navigationState.navigateToComments(it)
+                    })
+            },
+            commentsScreenContent = {feedPost ->
+                CommentsScreen(
+                    onBackPressed = {
+                        navigationState.navHostController.popBackStack()
+                    },
+                    feedPost = feedPost
+                )
             },
             favoriteScreenContent = { TextCounter("Вкладка Favorite", paddingValues) },
             profileScreenContent = { TextCounter("Вкладка Profile", paddingValues) }

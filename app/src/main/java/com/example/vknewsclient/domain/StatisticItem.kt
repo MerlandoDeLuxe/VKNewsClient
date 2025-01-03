@@ -6,9 +6,9 @@ import com.example.vknewsclient.R
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class StatisticItem(
+data class StatisticItem (
     val type: StatisticType,
-    val count: Int
+    var count: Int? = 0
 ) : Parcelable
 
 enum class StatisticType(
@@ -18,5 +18,5 @@ enum class StatisticType(
     VIEWS(R.drawable.view_eye_light_theme),
     SHARES(R.drawable.repost_light_theme),
     COMMENTS(R.drawable.comment_light_theme),
-    LIKES(R.drawable.like_light_theme)
+    LIKES(R.drawable.like_set)
 }

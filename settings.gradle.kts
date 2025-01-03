@@ -10,6 +10,7 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
         maven(url = "https://artifactory-external.vkpartner.ru/artifactory/vkid-sdk-android/")
+
     }
 }
 dependencyResolutionManagement {
@@ -18,6 +19,11 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven(url = "https://artifactory-external.vkpartner.ru/artifactory/vkid-sdk-android/")
+        mavenLocal {
+            content {
+                includeGroup("com.vk.id")
+            }
+        }
     }
 }
 

@@ -3,8 +3,9 @@ package com.example.vknewsclient.navigation
 import android.net.Uri
 import com.example.vknewsclient.domain.FeedPost
 import com.google.gson.Gson
+import javax.inject.Inject
 
-sealed class Screen(
+sealed class Screen (
     val route: String //В библиотеке Jetpack Compose Navigation навигация идет через названия
 ) {
     data object NewsFeed : Screen(ROUTE_NEWS_FEED)

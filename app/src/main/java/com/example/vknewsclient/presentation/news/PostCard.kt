@@ -35,9 +35,9 @@ import androidx.compose.ui.unit.sp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.example.vknewsclient.R
-import com.example.vknewsclient.domain.FeedPost
-import com.example.vknewsclient.domain.StatisticItem
-import com.example.vknewsclient.domain.StatisticType
+import com.example.vknewsclient.domain.entity.FeedPost
+import com.example.vknewsclient.domain.entity.StatisticItem
+import com.example.vknewsclient.domain.entity.StatisticType
 import com.example.vknewsclient.ui.theme.DarkRed
 
 @Composable
@@ -175,7 +175,7 @@ private fun SetStatisticsBar(
             )
 
             val commentsItem = statistics.getItemByType(StatisticType.COMMENTS)
-            val countCommentsItem = sharesItem.count ?: 0
+            val countCommentsItem = commentsItem.count ?: 0
             IconWithText(
                 iconResId = commentsItem.type.iconResId,
                 text = formatStatisticCount(countCommentsItem),
@@ -185,7 +185,7 @@ private fun SetStatisticsBar(
             )
 
             val likesItem = statistics.getItemByType(StatisticType.LIKES)
-            val countLikesItem = sharesItem.count ?: 0
+            val countLikesItem = likesItem.count ?: 0
             IconWithText(
                 iconResId = if (isLiked) R.drawable.like_set else R.drawable.like,
                 text = formatStatisticCount(countLikesItem),

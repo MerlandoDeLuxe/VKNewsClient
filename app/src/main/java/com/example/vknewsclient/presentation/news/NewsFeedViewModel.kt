@@ -1,17 +1,19 @@
 package com.example.vknewsclient.presentation.news
 
-import android.app.Application
 import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import com.example.vknewsclient.data.repository.NewsFeedRepositoryImpl
-import com.example.vknewsclient.domain.FeedPost
-import com.example.vknewsclient.domain.MetaDataReader
-import com.example.vknewsclient.domain.VideoItem
+import com.example.vknewsclient.domain.entity.FeedPost
+import com.example.vknewsclient.domain.entity.MetaDataReader
+import com.example.vknewsclient.domain.entity.VideoItem
+import com.example.vknewsclient.domain.usecase.ChangeLikeStatusUseCase
+import com.example.vknewsclient.domain.usecase.DeletePostUseCase
+import com.example.vknewsclient.domain.usecase.GetRecomendationsUseCase
+import com.example.vknewsclient.domain.usecase.LoadNextDataUseCase
 import com.example.vknewsclient.extension.mergeWith
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -26,23 +28,25 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NewsFeedViewModel @Inject constructor(
-    application: Application,
     val savedStateHandle: SavedStateHandle,
     val player: Player,
-    private val metaDataReader: MetaDataReader
-) : AndroidViewModel(application) {
+    private val metaDataReader: MetaDataReader,
+    private val getRecomendationsUseCase: GetRecomendationsUseCase,
+    private val loadNextDataUseCase: LoadNextDataUseCase,
+    private val changeLikeStatusUseCase: ChangeLikeStatusUseCase,
+    private val deletePostUseCase: DeletePostUseCase,
+) : ViewModel() {
     private val TAG = "NewsFeedViewModel"
 
     private val exceptionHandler = CoroutineExceptionHandler { _, _ ->
-        Log.d(TAG, "Исключение поймано exceptionHandler") }
-    private val repository = NewsFeedRepositoryImpl(application)
-
-    private val recommendationFlow = repository.recommendations
-
+        Log.d(TAG, "Исключение поймано exceptionHandler")
+    }
+    private val recommendationFlow = getRecomendationsUseCase()
     private val loadNextDataFlow = MutableSharedFlow<NewsFeedScreenState>()
 
     val screenState = recommendationFlow
         .filter {
+            Log.d(TAG, "it = $it")
             it.isNotEmpty()
         }
         .map {
@@ -96,19 +100,19 @@ class NewsFeedViewModel @Inject constructor(
                 )
             )
 
-            repository.loadNextData()
+            loadNextDataUseCase()
         }
     }
 
     fun changeLikeStatus(feedPost: FeedPost) {
-        viewModelScope.launch (exceptionHandler) {
-            repository.changeLikeStatus(feedPost)
+        viewModelScope.launch(exceptionHandler) {
+            changeLikeStatusUseCase(feedPost)
         }
     }
 
     fun removeItem(feedPost: FeedPost) {
-        viewModelScope.launch (exceptionHandler) {
-            repository.deletePost(feedPost)
+        viewModelScope.launch(exceptionHandler) {
+            deletePostUseCase(feedPost)
         }
     }
 

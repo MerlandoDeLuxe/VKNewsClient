@@ -1,7 +1,6 @@
 package com.example.vknewsclient.presentation.comments
 
 import android.app.Application
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,16 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.example.vknewsclient.domain.FeedPost
-import com.example.vknewsclient.domain.PostComment
-import com.example.vknewsclient.ui.theme.VKNewsClientTheme
+import com.example.vknewsclient.domain.entity.FeedPost
+import com.example.vknewsclient.domain.entity.PostComment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,8 +41,10 @@ fun CommentsScreen(
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
-    val viewModel: CommentsViewModel = viewModel(
-        factory = CommentsViewModelFactory(feedPost, application)
+    val viewModel: CommentsViewModel = hiltViewModel<CommentsViewModel, CommentsViewModel.Factory>(
+        creationCallback = {factory ->
+            factory.create(feedPost = feedPost)
+        }
     )
     val screenState = viewModel.screenState.observeAsState(CommentsScreenState.Initial)
     val currentState = screenState.value

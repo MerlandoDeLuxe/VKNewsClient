@@ -53,7 +53,6 @@ public fun onVKIDAuthSuccess(
         "Auth from $oAuthLabel with token ${formatToken(accessToken.token)}"
     )
 
-    viewModel.onSuccess()
 }
 
 public fun getMultibrandingSuccessCallback(

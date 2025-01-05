@@ -1,6 +1,6 @@
 package com.example.vknewsclient.presentation.stories
 
-import com.example.vknewsclient.domain.Story
+import com.example.vknewsclient.domain.entity.Story
 
 sealed class StoriesScreenState {
 

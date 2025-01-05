@@ -3,14 +3,11 @@ package com.example.vknewsclient.di
 import android.app.Application
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.example.vknewsclient.domain.MetaDataReader
-import com.example.vknewsclient.domain.MetaDataReaderImpl
+import com.example.vknewsclient.domain.entity.MetaDataReader
+import com.example.vknewsclient.domain.entity.MetaDataReaderImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.HiltAndroidApp
-import dagger.hilt.android.components.ViewModelComponent
-import dagger.hilt.android.scopes.ViewModelScoped
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 

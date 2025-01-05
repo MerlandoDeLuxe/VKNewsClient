@@ -1,6 +1,8 @@
-package com.example.vknewsclient.domain
+package com.example.vknewsclient.domain.entity
 
-data class PostComment (
+import javax.inject.Inject
+
+data class PostComment @Inject constructor (
     val id: Long,
     val authorName: String,
     val authorAvatarUrl: String,

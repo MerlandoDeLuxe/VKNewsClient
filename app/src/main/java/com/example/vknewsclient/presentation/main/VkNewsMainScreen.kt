@@ -82,17 +82,11 @@ fun MainScreen() {
         AppNavGraph(
             navHostController = navigationState.navHostController,
             newsFeedScreenContent = {
-                Column {
-
-
-
-                    NewsFeedScreen(
-                        paddingValues,
-                        onCommentClickListener = {
-                            navigationState.navigateToComments(it)
-                        })
-
-                }
+                NewsFeedScreen(
+                    paddingValues,
+                    onCommentClickListener = {
+                        navigationState.navigateToComments(it)
+                    })
             },
             commentsScreenContent = { feedPost ->
                 CommentsScreen(

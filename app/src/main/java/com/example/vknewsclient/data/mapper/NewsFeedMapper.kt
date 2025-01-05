@@ -5,17 +5,18 @@ import androidx.core.net.toUri
 import com.example.vknewsclient.data.model.RootResponseCommentsDto
 import com.example.vknewsclient.data.model.RootResponseNewsFeedDto
 import com.example.vknewsclient.data.model.RootResponseStories
-import com.example.vknewsclient.domain.FeedPost
-import com.example.vknewsclient.domain.PostComment
-import com.example.vknewsclient.domain.StatisticItem
-import com.example.vknewsclient.domain.StatisticType
-import com.example.vknewsclient.domain.Story
+import com.example.vknewsclient.domain.entity.FeedPost
+import com.example.vknewsclient.domain.entity.PostComment
+import com.example.vknewsclient.domain.entity.StatisticItem
+import com.example.vknewsclient.domain.entity.StatisticType
+import com.example.vknewsclient.domain.entity.Story
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.math.absoluteValue
 
-class NewsFeedMapper {
+class NewsFeedMapper @Inject constructor(){
 
     private val TAG = "NewsFeedMapper"
     fun mapResponseToPost(responsDto: RootResponseNewsFeedDto): List<FeedPost> {
@@ -43,7 +44,7 @@ class NewsFeedMapper {
                 statistics = listOf(
                     StatisticItem(
                         type = StatisticType.LIKES,
-                        count = post.likes?.userLikes ?: 0
+                        count = post.likes?.count ?: 0
                     ),
                     StatisticItem(
                         type = StatisticType.SHARES,

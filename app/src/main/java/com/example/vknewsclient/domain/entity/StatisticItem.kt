@@ -1,12 +1,13 @@
-package com.example.vknewsclient.domain
+package com.example.vknewsclient.domain.entity
 
 import android.os.Parcelable
 import androidx.annotation.DrawableRes
 import com.example.vknewsclient.R
 import kotlinx.parcelize.Parcelize
+import javax.inject.Inject
 
 @Parcelize
-data class StatisticItem (
+data class StatisticItem @Inject constructor(
     val type: StatisticType,
     var count: Int? = 0
 ) : Parcelable

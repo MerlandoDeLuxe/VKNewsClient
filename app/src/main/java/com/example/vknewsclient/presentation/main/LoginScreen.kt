@@ -1,26 +1,24 @@
 package com.example.vknewsclient.presentation.main
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.vknewsclient.presentation.news.CreatingVideoPlayer
+import com.example.vknewsclient.domain.entity.AuthState
 import com.vk.id.AccessToken
 import com.vk.id.RefreshToken
 import com.vk.id.VKID
@@ -37,20 +35,20 @@ fun LoginScreen(
 
 //    CreatingVideoPlayer()
     val viewModel : MainViewModel = hiltViewModel()
-    val authState = viewModel.authState.observeAsState(AuthState.Initial)
+    val authState = viewModel.state.collectAsState(AuthState.Initial)
 
     when (authState.value) {
         AuthState.Authorized -> {
-
             MainScreen()
+            Log.d(TAG, "LoginScreen: Мы в Authorized")
         }
 
         AuthState.Initial -> {
-
+            Log.d(TAG, "LoginScreen: Мы в Initial")
         }
 
         AuthState.NotAuthorized -> {
-
+            Log.d(TAG, "LoginScreen: Мы в NotAuthorized")
         }
     }
 

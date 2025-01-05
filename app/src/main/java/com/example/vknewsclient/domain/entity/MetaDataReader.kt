@@ -1,4 +1,4 @@
-package com.example.vknewsclient.domain
+package com.example.vknewsclient.domain.entity
 
 import android.app.Application
 import android.net.Uri

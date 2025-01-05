@@ -1,4 +1,4 @@
-package com.example.vknewsclient.domain
+package com.example.vknewsclient.domain.entity
 
 import android.net.Uri
 import androidx.media3.common.MediaItem

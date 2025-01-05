@@ -1,46 +1,52 @@
-package com.example.vknewsclient.data.repository
+package com.example.vknewsclient.data
 
 import android.app.Application
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
 import com.example.vknewsclient.data.database.UserIdDbModel
 import com.example.vknewsclient.data.database.VkDatabase
 import com.example.vknewsclient.data.mapper.NewsFeedMapper
 import com.example.vknewsclient.data.model.RootResponseLikesCount
 import com.example.vknewsclient.data.network.ApiFactory
-import com.example.vknewsclient.domain.FeedPost
-import com.example.vknewsclient.domain.PostComment
-import com.example.vknewsclient.domain.StatisticItem
-import com.example.vknewsclient.domain.StatisticType
-import com.example.vknewsclient.domain.Story
+import com.example.vknewsclient.data.network.ApiService
+import com.example.vknewsclient.domain.entity.FeedPost
+import com.example.vknewsclient.domain.entity.PostComment
+import com.example.vknewsclient.domain.entity.StatisticType
 import com.example.vknewsclient.extension.mergeWith
-import com.example.vknewsclient.presentation.stories.StoriesScreenState
+import com.example.vknewsclient.domain.entity.AuthState
+import com.example.vknewsclient.domain.entity.Story
+import com.example.vknewsclient.domain.repository.NewsFeedRepository
+import com.vk.id.AccessToken
+import com.vk.id.VKID
+import com.vk.id.VKIDAuthFail
+import com.vk.id.auth.VKIDAuthCallback
+import com.vk.id.auth.VKIDAuthParams
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.random.Random
+import javax.inject.Inject
 
-class NewsFeedRepositoryImpl(private val application: Application) {
+class NewsFeedRepositoryImpl @Inject constructor(
+    private val connect : VkDatabase,
+    private val mapper : NewsFeedMapper,
+    private val apiFactory : ApiService
+) : NewsFeedRepository {
 
     private val TAG = "NewsFeedRepositoryImpl"
 
-    private val connectDb = VkDatabase.getInstance(application).dao()
-    private val apiFactory = ApiFactory.apiService
+    private val connectDb = connect.dao()
+
     private val scope = CoroutineScope(Dispatchers.IO)
     private var token = ""
-    private val mapper = NewsFeedMapper()
 
     private val nextDataNeededEvents = MutableSharedFlow<Unit>(replay = 1)
     private val refreshedListFlow = MutableSharedFlow<List<FeedPost>>()
@@ -53,25 +59,27 @@ class NewsFeedRepositoryImpl(private val application: Application) {
                 return@collect
             }
             // данные если мы получили уже все рекомендуемые данные и API вернула пустой список
+
             val userFromDb = scope.async {
                 getUserFromDbWithAccessToken()
             }
             val userIdDbModel = userFromDb.await()
-            val result = scope.async {
-                val response = if (startFrom == null) {
-                    apiFactory.loadNewsFeed(userIdDbModel.accessToken)
-                } else {
-                    apiFactory.loadNewsFeedNext(startFrom, userIdDbModel.accessToken)
-                }
-                delay(500)
-                nextFrom = response.newsFeedContent.nextFrom
 
-                val posts = mapper.mapResponseToPost(response)
-                _feedPosts.addAll(posts)
-                _feedPosts
+            val response = if (startFrom == null) {
+                apiFactory.loadNewsFeed(userIdDbModel.accessToken)
+            } else {
+                apiFactory.loadNewsFeedNext(startFrom, userIdDbModel.accessToken)
             }
-            result.await()
+            delay(500)
+            nextFrom = response.newsFeedContent.nextFrom
+
+            val posts = mapper.mapResponseToPost(response)
+            _feedPosts.addAll(posts)
+            _feedPosts
+
             emit(feedPosts)
+            Log.d(TAG, "feedPost = $feedPosts ")
+            Log.d(TAG, "_feedPosts: $_feedPosts")
         }
     }.retry {
         delay(RETRY_TIMEOUT_MILLIS)
@@ -79,7 +87,7 @@ class NewsFeedRepositoryImpl(private val application: Application) {
         true
     }
 
-    val getStories = flow {
+    private val getStories = flow {
         val userIdDbModel = getUserFromDbWithAccessToken()
 
         val user = apiFactory.getUser(
@@ -132,7 +140,7 @@ class NewsFeedRepositoryImpl(private val application: Application) {
 
     private var nextFrom: String? = null
 
-    val recommendations = loadedListFlow
+    private val recommendations = loadedListFlow
         .mergeWith(refreshedListFlow)
         .stateIn(
             scope = scope,
@@ -140,11 +148,52 @@ class NewsFeedRepositoryImpl(private val application: Application) {
             initialValue = feedPosts
         )
 
-    suspend fun loadNextData() {
+    private val authState = MutableStateFlow<AuthState>(AuthState.Initial)
+
+    private val authentification = flow {
+
+        val initializer = VKIDAuthParams.Builder().apply {
+            scopes =
+                setOf("status", "email", "wall", "friends", "groups", "stories", "photos")
+            build()
+        }
+
+        val vkAuthCallback =
+            object : VKIDAuthCallback {
+                override fun onAuth(accessToken: AccessToken) {
+                    Log.d(TAG, "onAuth: Успех")
+                    authState.value = AuthState.Authorized
+                    insertAccessToken(
+                        accessToken = accessToken.token,
+                        userId = accessToken.userID.toString()
+                    )
+                }
+
+                override fun onFail(fail: VKIDAuthFail) {
+                    Log.d(TAG, "onFail: не успех ${fail.description}")
+                    authState.value = AuthState.NotAuthorized
+                }
+            }
+
+        authState.collect {
+            VKID.instance.authorize(
+                callback = vkAuthCallback,
+                params = initializer.build()
+            )
+            emit(it)
+            Log.d(TAG, "it AuthState = ${it}")
+        }
+    }.stateIn(
+        scope = scope,
+        started = SharingStarted.Lazily,
+        initialValue = AuthState.Initial
+    )
+
+    override suspend fun loadNextData() {
         nextDataNeededEvents.emit(Unit)
     }
 
-    suspend fun deletePost(feedPost: FeedPost) {
+    override suspend fun deletePost(feedPost: FeedPost) {
         apiFactory.ignorePost(
             ownerId = feedPost.communityId,
             postId = feedPost.id,
@@ -154,63 +203,59 @@ class NewsFeedRepositoryImpl(private val application: Application) {
         refreshedListFlow.emit(feedPosts)
     }
 
-    suspend fun changeLikeStatus(feedPost: FeedPost) {
-        Log.d(TAG, "changeLikeStatus: ${feedPost.id}")
-        Log.d(TAG, "changeLikeStatus: ${feedPost.communityId}")
-        Log.d(TAG, "changeLikeStatus: ${feedPost.communityName}")
-        Log.d(
-            TAG, "changeLikeStatus: ${
-                feedPost.statistics.filter {
-                    it.type == StatisticType.LIKES
-                }
-                    .forEach {
-                        Log.d(TAG, "changeLikeStatus: ${it.count}")
+    override suspend fun changeLikeStatus(feedPost: FeedPost) {
+        Log.d(TAG, "changeLikeStatus feedPost.id: ${feedPost.id}")
+        Log.d(TAG, "changeLikeStatus feedPost.communityId: ${feedPost.communityId}")
+        Log.d(TAG, "changeLikeStatus feedPost.communityName: ${feedPost.communityName}")
 
-                    }
-            }"
-        )
+        val userIdDbModel = getUserFromDbWithAccessToken()
+        Log.d(TAG, "changeLikeStatus: userIdDbModel = $userIdDbModel")
+
         val response: RootResponseLikesCount
-        feedPost.isLiked
+
         response = if (feedPost.isLiked) {
+            Log.d(TAG, "changeLikeStatus: пост был пролайкан, лайк нужно снять")
             apiFactory.deleteLike(
                 ownerId = feedPost.communityId,
                 postId = feedPost.id,
-                token = token
+                token = userIdDbModel.accessToken
             )
         } else {
+            Log.d(TAG, "changeLikeStatus: пост не был пролайкан, лайк нужно поставить")
             apiFactory.addLike(
                 ownerId = feedPost.communityId,
                 postId = feedPost.id,
-                token = token
+                token = userIdDbModel.accessToken
             )
         }
 
+        Log.d(TAG, "changeLikeStatus: response = $response")
         val newLikesCount = response.likes.count
 
         Log.d(TAG, "changeLikeStatus: newLikesCount = $newLikesCount")
 
-//        val oldStatistics = feedPost.statistics
-//        val newStatistics = oldStatistics.map {
-//            if (it.type == StatisticType.LIKES) {
-//                it.count = newLikesCount
-//            }
-//            it
-//        }
-//
-//        Log.d(TAG, "addLike: oldFeedPostStatistics = $oldStatistics")
-//        Log.d(TAG, "addLike: newFeedPostStatistics = $newStatistics")
-
-        val newStatistics = feedPost.statistics.toMutableList().apply {
-            removeIf {
-                it.type == StatisticType.LIKES  //Удаляем из коллекции элемент, который хранит кол-во лайков
+        val oldStatistics = feedPost.statistics
+        val newStatistics = oldStatistics.map {
+            if (it.type == StatisticType.LIKES) {
+                it.count = newLikesCount
             }
-            add(
-                StatisticItem(
-                    type = StatisticType.LIKES,
-                    count = newLikesCount
-                )
-            ) //Вставляем туда новый
+            it
         }
+
+        Log.d(TAG, "changeLikeStatus: oldFeedPostStatistics = $oldStatistics")
+        Log.d(TAG, "changeLikeStatus: newFeedPostStatistics = $newStatistics")
+
+//        val newStatistics = feedPost.statistics.toMutableList().apply {
+//            removeIf {
+//                it.type == StatisticType.LIKES  //Удаляем из коллекции элемент, который хранит кол-во лайков
+//            }
+//            add(
+//                StatisticItem(
+//                    type = StatisticType.LIKES,
+//                    count = newLikesCount
+//                )
+//            ) //Вставляем туда новый
+//        }
 
         Log.d(TAG, "changeLikeStatus: newStatistics = $newStatistics")
         val newPost = feedPost.copy(statistics = newStatistics, isLiked = !feedPost.isLiked)
@@ -220,7 +265,13 @@ class NewsFeedRepositoryImpl(private val application: Application) {
         refreshedListFlow.emit(feedPosts)
     }
 
-    suspend fun getComments(feedPost: FeedPost): List<PostComment> {
+    override fun getStories(): Flow<List<Story>> = getStories
+
+    override fun getRecomendation(): StateFlow<List<FeedPost>> = recommendations
+
+    override fun getAuthentification(): StateFlow<AuthState> = authentification
+
+    override suspend fun getComments(feedPost: FeedPost): List<PostComment> {
         val userIdDbModel = getUserFromDbWithAccessToken()
         val response = apiFactory.getComments(
             postId = feedPost.id,
